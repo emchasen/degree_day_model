@@ -25,39 +25,51 @@ DD1 <- if(DD < 0) {
 }
 DD1
 
-degree_day <- function(location, month, TL, TH) {
+degree_day <- function(location, month, TH, TL) {
         url <- sprintf(paste0("http://www.wunderground.com/history/airport/",location, "/2016/%s/1/MonthlyHistory.html?format=1"), month)
         #print(url)
         download.file(url = url, destfile = "./monthly data/month.csv")
         month_data <- read.csv("./monthly data/month.csv", header = TRUE)
-        #highs <- vector()
-        #lows <- vector()
-        dd <- vector()
+        highs <- vector()
+        lows <- vector()
         for(i in 1:nrow(month_data)){
                 dH[i] <- month_data[i, 2]
                 dL[i] <- month_data[i, 4]
-                #highs <- append(highs, dH[i])
-                #lows <- append(lows, dL[i])
-                H[i] <- if(dH[i] > TH) {
-                        TH} else {
-                                dH[i]
-                        }
-                L[i] <- if(dL[i] < TL) {
-                        TL} else {
-                                dL[i]
-                        }
-                #DDay[i] <- ((H[i] + L[i])/2) - TL
-                #DD1[i] <- if(DDay[i] < 0) {
-                 #       0
-                #}
-                #dd <- append(dd, DD1[i])
+                highs <- append(highs, dH[i])
+                lows <- append(lows, dL[i])
         }
-        #print(highs)
-        #print(lows)
+        highlow <- data.frame(highs, lows)
+        #print(highlow)
+        hi <- vector()
+        lo <- vector()
+        dd <- vector()
+        H <- c()
+        L <- c()
+        DDay <- c()
+        for(i in 1:nrow(highlow)) {
+                H[i] <- if(highlow[i, 1] > TH) {
+                       TH} else {
+                             highlow[i, 1]
+                       }
+                L[i] <- if(highlow[i, 2] < TL) {
+                       TL} else {
+                              highlow[i, 2]
+                        }
+                DDay[i] <- (H[i] + L[i])/2 - TL
+                if(DDay[i] < 0 {
+                        0} else {
+                                DDay[i]
+                        }
+                #hi <- append(hi, H[i])
+                #lo <- append(lo, L[i])
+                dd <- append(dd, DDay[i])
+        }
+        #print(hi)
+        #print(lo)
         print(dd)
 }
 
-degree_day("KISW", 2, 50, 86)
+degree_day("KMSN", 2, 86, 30)
 
 
 
