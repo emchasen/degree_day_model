@@ -27,7 +27,6 @@ DD1
 
 degree_day <- function(location, month, TH, TL) {
         url <- sprintf(paste0("http://www.wunderground.com/history/airport/",location, "/2016/%s/1/MonthlyHistory.html?format=1"), month)
-        #print(url)
         download.file(url = url, destfile = "./monthly data/month.csv")
         month_data <- read.csv("./monthly data/month.csv", header = TRUE)
         highs <- vector()
@@ -39,7 +38,6 @@ degree_day <- function(location, month, TH, TL) {
                 lows <- append(lows, dL[i])
         }
         highlow <- data.frame(highs, lows)
-        #print(highlow)
         hi <- vector()
         lo <- vector()
         dd <- vector()
@@ -47,26 +45,13 @@ degree_day <- function(location, month, TH, TL) {
         L <- c()
         DDay <- c()
         for(i in 1:nrow(highlow)) {
-                H[i] <- if(highlow[i, 1] > TH) {
-                       TH} else {
-                             highlow[i, 1]
-                       }
-                L[i] <- if(highlow[i, 2] < TL) {
-                       TL} else {
-                              highlow[i, 2]
-                        }
-                DDay[i] <- (H[i] + L[i])/2 - TL
-                if(DDay[i] < 0 {
-                        0} else {
-                                DDay[i]
-                        }
-                #hi <- append(hi, H[i])
-                #lo <- append(lo, L[i])
+                H[i] <- if(highlow[i, 1] > TH) {TH} else {highlow[i, 1]}
+                L[i] <- if(highlow[i, 2] < TL) {TL} else {highlow[i, 2]}
+                DDtemp <- (H[i] + L[i])/2 - TL
+                DDay[i] <- if(DDtemp < 0) {0} else {DDtemp}
                 dd <- append(dd, DDay[i])
         }
-        #print(hi)
-        #print(lo)
-        print(dd)
+        sum(dd)
 }
 
 degree_day("KMSN", 2, 86, 30)
@@ -85,10 +70,3 @@ degree_day("KMSN", 2, 86, 30)
 #        print(urlm)
 #}
 
-for(i in 1:nrow(febdata)){
-        dH <- febdata[i, 2]
-        dL <- febdata[i, 4]
-        highs <- append(high, dH)
-        #lows <- append(low, dL)
-        print(highs)
-}
