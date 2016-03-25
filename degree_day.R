@@ -1,55 +1,51 @@
+#example url
+#http://www.wunderground.com/history/airport/KWIWISCO3/2016/1/1/MonthlyHistory.html?format=1
+
 setwd("~/Google Drive/coursera/degree day data science")
 
 if(!file.exists("monthly data")) {
   dir.create("monthly data")
 }
 
-degree_day <- function(location, month, TH, TL) {
-        #download data from wunderground
-        url <- sprintf(paste0("http://www.wunderground.com/history/airport/",location, "/2016/%s/1/MonthlyHistory.html?format=1"), month)
-        download.file(url = url, destfile = "./monthly data/month.csv")
-        month_data <- read.csv("./monthly data/month.csv", header = TRUE)
-        #create empty vectors for daily highs and lows
-        highs <- vector()
-        lows <- vector()
-        for(i in 1:nrow(month_data)){
-                # for each row of data (day), extra the high (dH) and low (dL)
-                dH[i] <- month_data[i, 2]
-                dL[i] <- month_data[i, 4]
-                # add high and low elements to their respective vector
-                highs <- append(highs, dH[i])
-                lows <- append(lows, dL[i])
-        }
-        #create dataframe of daily highs and lows ... look into doing this from the original read.csv call
-        highlow <- data.frame(highs, lows)
-        # create empty vectors and variables to fill in the next iteration
-        hi <- vector()
-        lo <- vector()
-        dd <- vector()
-        H <- c()
-        L <- c()
-        DDay <- c()
-        for(i in 1:nrow(highlow)) {
+
+degree_day <- function(location,  month, year, TH, TL) {
+    #download data from wunderground, create one data frame containing all months with year to date
+    mo <- list()
+    for(i in 1:month) {
+      url <- paste0("http://www.wunderground.com/history/airport/",location, "/", year, "/", i, "/1/MonthlyHistory.html?format=1")
+      download.file(url = url, destfile = paste0("./monthly data/mo", i, ".csv"))
+      mon <- read.csv(paste0("./monthly data/mo", i, ".csv"), header = TRUE)[ ,c("Max.TemperatureF", "Min.TemperatureF")]
+      mon$i <- i
+      mo[[i]] <- mon
+    }
+    all_data <- do.call(rbind, mo) #data frame with highs and lows for each month
+    # calculate degree day accumuulation by defining the high for each day, the low for each day, running the calculation,
+    # then creating vector of DD for each day and finally by taking the sum.
+        dd <- c()
+        for(i in 1:nrow(all_data)) {
                 # highs or lows used for calculation cannot be outside the temperature thresholds
-                H[i] <- if(highlow[i, 1] > TH) {TH} else {highlow[i, 1]}
-                L[i] <- if(highlow[i, 2] < TL) {TL} else {highlow[i, 2]}
-                DDtemp <- (H[i] + L[i])/2 - TL
+                High <- if(all_data[i, 1] > TH) {TH} else {all_data[i, 1]} #define high temp 
+                Low <- if(all_data[i, 2] < TL) {TL} else {all_data[i, 2]} # define low temp
+                DDtemp <- (High + Low)/2 - TL ##DD calculation
                 # degree days cannot be negative
-                DDay[i] <- if(DDtemp < 0) {0} else {DDtemp}
-                dd <- append(dd, DDay[i])
+                DDay <- if(DDtemp < 0) {0} else {DDtemp}
+                dd <- append(dd, DDay)
         }
         # degree day accrual for the month
-        sum(dd)
+        #print(dd)
+        GDD <<- sum(dd)
+        #print(GDD)
+        print(paste("Total accumulation of GDD for", location, "is", sum(dd)))
 }
 
-degree_day("KMSN", 2, 86, 30)
+degree_day("KRNH", 3, 2016, 85, 41)
+
+#next steps
+#1. fill in proper DD calculation
+#2-3. learn how to apply this to spatial R
 
 
-# still want to figure out why this didn't work
-#my_function1 <- function(location, month) {
-#        url <- "www.wunderground.com/history/airport/code/2016/no/1/MonthlyHistory.html?format=1"
-#        urll <- gsub("code", "location", url)
-#        urlm <- gsub("no", "month", urll)
-#        print(urlm)
-#}
+
+
+
 
