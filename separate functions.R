@@ -21,7 +21,35 @@ DD_data <- function(location,  month, year) {
        
 }
 
-DD_data("KISW", 7, 2015)
+DD_data("KRNH", 3, 2016)
+
+#creating the function to read in data from all locations
+DD_data_ID_all <- function(ID = 1:46, month, year = 2016) {
+        #read in file with ID names
+        id_list <- read.csv("StationIDs.csv")
+        deg_data <- list()
+        for(i in ID){
+                location = id_list[i, 3]
+                #download data from wunderground, create one data frame containing all months with year to date
+                mo <- list()
+                for(j in 3:month) {
+                        url <- paste0("http://www.wunderground.com/history/airport/",location, "/", year, "/", j, "/1/MonthlyHistory.html?format=1")
+                        download.file(url = url, destfile = paste0("./mo", j, ".csv"))
+                        mon <- read.csv(paste0("./mo", j, ".csv"), header = TRUE)[ ,c("Max.TemperatureF", "Min.TemperatureF")]
+                        mo[[j]] <- mon
+                }
+                deg_data <- do.call(rbind, mo) #data frame with highs and lows for each month
+                #print(deg_data)
+                deg_data$date <- seq(as.Date("2016/3/1"), by = "day", length.out = nrow(deg_data))
+                #print(deg_data)
+                #ddata <<- deg_data
+                # create text file
+                filename <- paste("./location data/loc", i, ".txt", sep="")
+                write.table(deg_data, filename, row.names = FALSE, col.names = FALSE)
+        }
+}
+
+DD_data_ID_all(ID = 1:2, month = 4)
 
 
 # Function two calculate degree day accumuulation by either defining the high for each day, 
@@ -77,3 +105,7 @@ print(paste("Total accumulation of GDD is", sum(dd)))
 
 Acc_Degday(86, 50, method = "simple")
 Acc_Degday(86, 50, method = "curve")
+
+
+setwd("monthly data/")
+
