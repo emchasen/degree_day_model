@@ -49,7 +49,7 @@ DD_data_ID_all <- function(ID = 1:46, month, year = 2016) {
         }
 }
 
-DD_data_ID_all(ID = 1:2, month = 4)
+DD_data_ID_all(ID = 1:5, month = 4)
 
 
 # Function two calculate degree day accumuulation by either defining the high for each day, 
@@ -57,55 +57,60 @@ DD_data_ID_all(ID = 1:2, month = 4)
 # then creating vector of DD for each day and finally by taking the sum. Or finding the area under
 # polynomial curve
 Acc_Degday <- function(TH, TL, method = c("simple", "curve")){
-        dd <- c()
-        if (method == "simple"){ 
-        for(i in 1:nrow(deg_data)) {
-                # highs or lows used for calculation cannot be outside the temperature thresholds
-                High <- if(deg_data[i, 1] > TH) {TH} else {deg_data[i, 1]} #define high temp 
-                Low <- if(deg_data[i, 2] < TL) {TL} else {deg_data[i, 2]} # define low temp
-                DDtemp <- (High + Low)/2 - TL ##DD calculation
-                # degree days cannot be negative
-                DDay <- if(DDtemp < 0) {0} else {DDtemp}
-                dd <- append(dd, DDay)
+        GDD <- c() # empty vector for degree day accumulations for each location
+        for(i in 1:5){
+                dd <- c() # empty vector for each degree day total
+                filename <- paste("./location data/loc", i, ".txt", sep="") #read in data from location data folder
+                dat <- read.table(filename, col.names = c("high", "low", "date"))
+                if (method == "simple"){ 
+                        for(i in 1:nrow(dat)) {
+                                # highs or lows used for calculation cannot be outside the temperature thresholds
+                                High <- if(dat[i, 1] > TH) {TH} else {dat[i, 1]} #define high temp 
+                                Low <- if(dat[i, 2] < TL) {TL} else {dat[i, 2]} # define low temp
+                                DDtemp <- (High + Low)/2 - TL ##DD calculation
+                                # degree days cannot be negative
+                                DDay <- if(DDtemp < 0) {0} else {DDtemp}
+                                dd <- append(dd, DDay)
+                                #print(dd)
+                                }
+                        }
+                if (method == "curve") {
+                        require(polynom)
+                        #make vector of high and low data combined
+                        temps <-c(rbind(deg_data[,2],deg_data[,1]))
+                        print(length(temps))
+                        #times <- seq(0, length(temps), by = 0.5)
+                        #make vector of time 
+                        time.a = c(.5, 1, 1.5, 2, 2.5)
+                        #create loop
+                        for(i in 1:(length(temps)-5)){
+                                #time.a = times[(i+1):(i+5)]
+                                temp.a = temps[(i+1):(i+5)]
+                                #print(head(time.a))
+                                fit <- lm(temp.a ~ time.a + I(time.a^2) + I(time.a^3) + I(time.a^4))
+                                #print(coef(fit)[[1]])
+                                integrand <- function(x) {coef(fit)[[1]] + coef(fit)[[2]]*x + coef(fit)[[3]]*x^2 + coef(fit)[[4]]*x^3 + coef(fit)[[5]]*x^4}
+                                #print(integrand)
+                                #cu <- integrate(integrand, lower = time.a[2], upper = time.a[4])
+                                cu <- integrate(integrand, lower = 1, upper = 2)
+                                #Error in integrate(integrand, lower = 1, upper = 2) : 
+                                # non-finite function value
+                                DDtemp <- cu$value - TL
+                                DDay <- if(DDtemp < 0) {0} else {DDtemp}
+                                dd <- append(dd, DDay)
+                                }
+                        }
+                #print(paste("Total accumulation of GDD is", sum(dd)))
+                DDsum <- sum(dd)
+                #print(DDsum)
+                GDD <- append(GDD, DDsum) #vector of all GDD accumulations
                 }
+        #print(GDD)
+        #write file that will contain two columns: Location and GDD accumuations
+        id_list <- read.csv("StationIDs.csv") #read in file with ID names
+        df = data.frame(ID = id_list[,3], deg = GDD)
+        write.table(df, "GDDdata.txt", row.names = FALSE)
         }
-# degree day accrual for the month
-#print(dd)
-        if (method == "curve") {
-        require(polynom)
-        #make vector of high and low data combined
-        temps <-c(rbind(deg_data[,2],deg_data[,1]))
-        print(length(temps))
-        #times <- seq(0, length(temps), by = 0.5)
-        #make vector of time 
-        time.a = c(.5, 1, 1.5, 2, 2.5)
-        #create loop
-        for(i in 1:(length(temps)-5)){
-                #time.a = times[(i+1):(i+5)]
-                temp.a = temps[(i+1):(i+5)]
-                #print(head(time.a))
-                fit <- lm(temp.a ~ time.a + I(time.a^2) + I(time.a^3) + I(time.a^4))
-                #print(coef(fit)[[1]])
-                integrand <- function(x) {coef(fit)[[1]] + coef(fit)[[2]]*x + coef(fit)[[3]]*x^2 + coef(fit)[[4]]*x^3 + coef(fit)[[5]]*x^4}
-                #print(integrand)
-                #cu <- integrate(integrand, lower = time.a[2], upper = time.a[4])
-                cu <- integrate(integrand, lower = 1, upper = 2)
-                
-                #Error in integrate(integrand, lower = 1, upper = 2) : 
-                 #       non-finite function value
-                DDtemp <- cu$value - TL
-                DDay <- if(DDtemp < 0) {0} else {DDtemp}
-                dd <- append(dd, DDay)
-                }
-        }
-GDD <<- sum(dd)
-#print(GDD)
-print(paste("Total accumulation of GDD is", sum(dd)))
-}
 
 Acc_Degday(86, 50, method = "simple")
 Acc_Degday(86, 50, method = "curve")
-
-
-setwd("monthly data/")
-
